@@ -1,0 +1,20 @@
+apiVersion: monitoring.grafana.com/v1alpha1
+kind: PodLogs
+metadata:
+  labels:
+    instance: primary
+  name: kubernetes-pods
+  namespace: grafana-agent
+spec:
+  pipelineStages:
+    - docker: {}
+    - match:
+        selector: '{namespace="app"}'
+  namespaceSelector:
+    matchNames:
+    - default                            #<---- these are namespaces where logs will be collected from
+    - nginx
+    - grafana
+    - app
+  selector:
+    matchLabels: {}

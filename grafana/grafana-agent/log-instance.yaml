@@ -1,0 +1,24 @@
+apiVersion: monitoring.grafana.com/v1alpha1
+kind: LogsInstance
+metadata:
+  name: primary
+  namespace: grafana-agent
+  labels:
+    agent: grafana-agent-logs
+spec:
+  clients:
+    - url: http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push
+    #basicAuth:
+      #username:
+        #name: primary-credentials-logs                  --> use without auth for local dev
+        #key: username
+      #password:
+        #name: primary-credentials-logs
+        #key: password
+
+  # Supply an empty namespace selector to look in all namespaces. Remove
+  # this to only look in the same namespace as the LogsInstance CR
+  podLogsNamespaceSelector: {}
+  podLogsSelector:
+    matchLabels:
+      instance: primary

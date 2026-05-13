@@ -1,0 +1,43 @@
+schemaConfig:
+  configs:
+    - from: "2024-04-01"
+      store: tsdb   #this setting ensures that we are storing logs in a time series database
+      object_store: s3
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+      chunks:
+        period: 24h
+
+loki:
+  useTestSchema: true
+  auth_enabled: false #in prod set authentication to true
+  commonConfig:
+    replication_factor: 1
+  storage:
+    type: s3
+    s3:
+      endpoint: http://minio-local:9000                    
+      accessKeyId: admin
+      secretAccessKey: verystrongpassword
+      insecure: true    #This is for http trafic this i for local dev but for prod switch to false 
+      s3ForcePathStyle: true
+    bucketNames:
+      chunks: loki-chuncks    #Ensure these buckets are created in minio
+      ruler: loki-ruler
+deploymentMode: SimpleScalable      #This simple scalablle mode of deployment is good but for more granular control and maximum scalability use the microservices mode
+read:
+  replicas: 1                   #These replicas are just for a test environment you would want more replicas for prod
+  persistence:
+    storageClass: standard
+write:
+  replicas: 1
+  persistence:
+    storageClass: standard     #Here ensure that you set the storageclass you prefer that is already set up on your cluster
+backend:
+  replicas: 1
+  persistence:
+    storageClass: standard
+      
+# From here use this helm install command to apply these configurations ( helm install loki grafana-community/loki -f ./loki-custom-values.yaml -n loki)

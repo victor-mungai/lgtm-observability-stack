@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app1
+  namespace: app
+spec:
+  containers:
+  - name: flog
+    image: mingrammer/flog
+    command: ["flog"]
+    args: ["-f", "apache_common", "-l"]   
