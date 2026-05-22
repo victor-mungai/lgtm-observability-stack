@@ -1,5 +1,6 @@
-schemaConfig:
-  configs:
+loki:
+  schemaConfig:
+   configs:
     - from: "2024-04-01"
       store: tsdb   #this setting ensures that we are storing logs in a time series database
       object_store: s3
@@ -7,11 +8,7 @@ schemaConfig:
       index:
         prefix: index_
         period: 24h
-      chunks:
-        period: 24h
 
-loki:
-  useTestSchema: true
   auth_enabled: false #in prod set authentication to true
   commonConfig:
     replication_factor: 1
@@ -21,11 +18,12 @@ loki:
       endpoint: http://minio-local:9000                    
       accessKeyId: admin
       secretAccessKey: verystrongpassword
-      insecure: true    #This is for http trafic this i for local dev but for prod switch to false 
+      insecure: true    #This is for http trafic this is for local dev but for prod switch to false 
       s3ForcePathStyle: true
     bucketNames:
-      chunks: loki-chuncks    #Ensure these buckets are created in minio
+      chunks: loki-chunks    #Ensure these buckets are created in minio
       ruler: loki-ruler
+      admin: loki-admin
 deploymentMode: SimpleScalable      #This simple scalablle mode of deployment is good but for more granular control and maximum scalability use the microservices mode
 read:
   replicas: 1                   #These replicas are just for a test environment you would want more replicas for prod

@@ -6,15 +6,34 @@ metadata:
   name: kubernetes-pods
   namespace: grafana-agent
 spec:
-  pipelineStages:
-    - docker: {}
-    - match:
-        selector: '{namespace="app"}'
   namespaceSelector:
     matchNames:
     - default                            #<---- these are namespaces where logs will be collected from
     - nginx
     - grafana
     - app
+  pipelineStages:   #This is how we normalize logs to enable proper filtering
+    # 1. Parse docker container logs
+    - docker: {}
+
+    # 2. Extract nginx access log fields
+    - regex:
+        expression: '^\S+\s+\S+\s+\S+\s+(?P<client_ip>\S+) - (?P<user>\S+) \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+) (?P<path>\S+) (?P<protocol>[^"]+)" (?P<status>\d{3}) (?P<bytes>\d+)'
+    # 3. Convert important fields into Loki labels
+    - labels:
+        method:
+        status:
+        path:
+        user:
+        client_ip:
+
+    # 4. Parse timestamp properly
+    - timestamp:
+        source: timestamp
+        format: "02/Jan/2006:15:04:05 -0700"
+
+    # 5. Keep full log line
+    - output:
+        source: message  
   selector:
     matchLabels: {}

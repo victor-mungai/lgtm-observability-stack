@@ -3,9 +3,11 @@ kind: Pod
 metadata:
   name: app1
   namespace: app
+  labels:
+    app: app1
 spec:
   containers:
   - name: flog
     image: mingrammer/flog
     command: ["flog"]
-    args: ["-f", "apache_common", "-l"]   
+    args: ["-f", "apache_common", "-d", "5s", "-n", "100"]   

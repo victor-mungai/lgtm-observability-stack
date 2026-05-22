@@ -4,7 +4,7 @@ datasources:
     datasources:
       - name: loki
         type: loki
-        url: http://loki-gateway.loki
+        url: http://loki-read.loki.svc.cluster.local:3100
         access: proxy
         isDefault: true
         editable: true
