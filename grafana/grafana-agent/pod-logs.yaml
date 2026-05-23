@@ -14,11 +14,12 @@ spec:
     - app
   pipelineStages:   #This is how we normalize logs to enable proper filtering
     # 1. Parse docker container logs
-    - docker: {}
 
+    #- docker: {}
     # 2. Extract nginx access log fields
     - regex:
         expression: '^\S+\s+\S+\s+\S+\s+(?P<client_ip>\S+) - (?P<user>\S+) \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+) (?P<path>\S+) (?P<protocol>[^"]+)" (?P<status>\d{3}) (?P<bytes>\d+)'
+
     # 3. Convert important fields into Loki labels
     - labels:
         method:
