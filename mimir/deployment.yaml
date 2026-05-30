@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mimir
+  namespace: mimir
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mimir
+  template:
+    metadata:
+      labels:
+        app: mimir
+    spec:
+      containers:
+      - name: mimir
+        image: grafana/mimir:latest
+
+        args:
+          - "-config.file=/etc/mimir/mimir.yaml"
+          - "-target=all"
+
+        ports:
+          - containerPort: 8080
+
+        env:
+          - name: AWS_ACCESS_KEY_ID
+            valueFrom:
+              secretKeyRef:
+                name: mimir-s3-secret
+                key: access_key_id
+
+          - name: AWS_SECRET_ACCESS_KEY
+            valueFrom:
+              secretKeyRef:
+                name: mimir-s3-secret
+                key: secret_access_key
+
+        volumeMounts:
+          - name: config
+            mountPath: /etc/mimir
+
+      volumes:
+        - name: config
+          configMap:
+            name: mimir-config

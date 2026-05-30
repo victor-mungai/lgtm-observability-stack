@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mimir-config
+  namespace: mimir
+
+data:
+  mimir.yaml: |
+    target: all
+
+    multitenancy_enabled: false
+
+    server:
+      http_listen_port: 8080
+      log_level: info
+
+    memberlist:
+      join_members: []
+
+    # -----------------------------
+    # Storage (S3 / MinIO)
+    # -----------------------------
+    common:
+      storage:
+        backend: s3
+        s3:
+          endpoint: #Replace-with-your-s3-endpoint
+          bucket_name: mimir-blocks
+          insecure: true
+          bucket_lookup_type: path
+
+    blocks_storage:
+      backend: s3
+      s3:
+        endpoint: #Replace-with-your-s3-endpoint
+        bucket_name: mimir-blocks
+        insecure: true
+        bucket_lookup_type: path
+
+    ruler_storage:
+      backend: s3
+      s3:
+        endpoint: #Replace-with-your-s3-endpoint
+        bucket_name: mimir-ruler
+        insecure: true
+        bucket_lookup_type: path
+
+    alertmanager_storage:
+      backend: s3
+      s3:
+        endpoint: #Replace-with-your-s3-endpoint
+        bucket_name: mimir-alerts
+        insecure: true
+        bucket_lookup_type: path
+
+    # -----------------------------
+    # Core runtime settings
+    # -----------------------------
+    ingester:
+      ring:
+        replication_factor: 1
+
+    store_gateway:
+      sharding_ring:
+        replication_factor: 1
+
+    # -----------------------------
+    # Limits (COMPATIBLE ONLY)
+    # -----------------------------
+    limits:
+      ingestion_rate: 100000
+      max_global_series_per_user: 150000
+
+    # -----------------------------
+    # Disable usage stats
+    # -----------------------------
+    usage_stats:
+      enabled: false
