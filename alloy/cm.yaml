@@ -1,0 +1,166 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alloy-config
+  namespace: alloy
+data:
+  config.alloy: |
+    // ==========================================
+    // KUBERNETES DISCOVERY (LOGS)
+    // ==========================================
+    discovery.kubernetes "log_pods" {
+      role = "pod"
+      namespaces {
+        names = ["app"]
+      }
+    }
+
+    discovery.relabel "log_pods" {
+      targets = discovery.kubernetes.log_pods.targets
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_phase"]
+        action        = "keep"
+        regex         = "Running|Pending"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        regex         = "logs"
+        action        = "keep"
+      }
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_container_name"]
+        target_label  = "container"
+      }
+      
+      // Construct log path
+      rule {
+        source_labels = ["__meta_kubernetes_pod_uid", "__meta_kubernetes_pod_container_name"]
+        target_label  = "__path__"
+        replacement   = "/var/log/pods/*$1/*.log"
+      }
+    }
+
+    // ==========================================
+    // LOG COLLECTION
+    // ==========================================
+    loki.source.kubernetes "pods" {
+      targets    = discovery.relabel.log_pods.output
+      forward_to = [loki.process.logs.receiver]
+    }
+
+    // ==========================================
+    // LOG PROCESSING
+    // ==========================================
+    loki.process "logs" {
+      // Parse the Common Log Format (CLF)
+      stage.regex {
+          expression = `^(?P<remote_addr>\S+) - (?P<remote_user>\S+) \[(?P<timestamp>[^\]]+)\] "(?P<method>\S+) (?P<request>\S+) (?P<protocol>\S+)" (?P<status>\d+) (?P<body_bytes_sent>\d+)`}
+
+      // Convert the extracted timestamp
+      stage.timestamp {
+        source = "timestamp"
+        format = "02/Jan/2006:15:04:05 -0700"
+      }
+
+      // Promote status and method to indexed labels
+      stage.labels {
+        values = {status="", method="", level="",}
+      }
+
+      // Add other fields as structured metadata
+      stage.structured_metadata {
+        values = {
+          remote_addr = "remote_addr",
+          remote_user = "remote_user",
+          request = "request",
+          body_bytes_sent = "body_bytes_sent",
+        }
+    }
+      forward_to = [loki.write.default.receiver]
+    }
+
+    // ==========================================
+    // LOKI OUTPUT
+    // ==========================================
+    loki.write "default" {
+      endpoint {
+        url = "http://loki-gateway.loki.svc.cluster.local/loki/api/v1/push"
+      }
+    }
+
+    // ==========================================
+    // MIMIR METRICS
+    // ==========================================
+    //Here it filters and considers the pods in the "app namespace"
+    discovery.kubernetes "metrics_pods" {
+      role = "pod"
+      namespaces {
+        names = ["app"]
+      }
+    }
+    
+    //Here it checks for the pods with the label (app:random-metrics)
+
+    discovery.relabel "metrics_pods" {
+      targets = discovery.kubernetes.metrics_pods.targets
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_label_app"]
+        regex         = "random-metrics"
+        action        = "keep"
+      }
+    
+
+     //Here it appends the port number to the discovered pod ip above
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_ip"]
+        target_label  = "__address__"
+        replacement   = "$1:8000"
+      }
+
+      rule {
+        target_label  = "metrics_path"
+        replacement   = "/metrics"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_namespace"]
+        target_label  = "namespace"
+      }
+
+      rule {
+        source_labels = ["__meta_kubernetes_pod_name"]
+        target_label  = "pod"
+      }
+    }
+
+    // ==========================================
+    // SCRAPE METRICS
+    // ==========================================
+    prometheus.scrape "random_metrics" {
+      targets       = discovery.relabel.metrics_pods.output
+      scrape_interval = "15s"
+      forward_to    = [prometheus.remote_write.mimir.receiver]
+    }
+
+    // ==========================================
+    // REMOTE WRITE TO MIMIR
+    // ==========================================
+    prometheus.remote_write "mimir" {
+      endpoint {
+        url = "http://mimir.mimir.svc.cluster.local:8080/api/v1/push"
+      }
+    }   

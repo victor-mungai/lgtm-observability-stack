@@ -4,7 +4,7 @@ metadata:
   name: app1
   namespace: app
   labels:
-    app: app1
+    app: logs
 spec:
   containers:
   - name: flog

@@ -1,0 +1,20 @@
+controller:
+  type: daemonset  # Critical: Deploys one pod per node
+
+alloy:
+  configMap:
+    create: false
+    name: alloy-config  
+    key: config.alloy
+        
+mounts:
+  varlog: true             # Required for log collection (/var/log/pods)
+  dockercontainers: false  # Set true if using Docker CRI directly
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 200m
+    memory: 256Mi   

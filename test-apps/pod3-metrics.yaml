@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: random-metrics-gen
+  labels:
+    app: random-metrics
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+  namespace: app
+spec:
+  containers:
+  - name: generator
+    # Uses a simple Python/Go image that generates random floats
+    image: quay.io/brancz/prometheus-example-app:v0.5.0
+    ports:
+    - containerPort: 8080
